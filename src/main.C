@@ -35,6 +35,9 @@
   #include "stygmhelpui.h"
   #include "stygmdmui.h"
   #include "jack.h"
+  #include "controlinterface.h"
+  #include <thread>
+  #include <iostream>
 
 
   RMGMO rmgmo;
@@ -53,7 +56,7 @@
   int main(int argc, char *argv[])
 
   {
-    fprintf (stderr,"\n%s %s - Copyright (c) 2006-2019 Josep Andreu (Holborn)\n",PACKAGE,VERSION);
+    fprintf (stderr,"\n%s %s 2 - Copyright (c) 2006-2019 Josep Andreu (Holborn)\n",PACKAGE,VERSION);
     if (argc == 1)
       fprintf (stderr, "Try 'stygmorgan --help' for command-line options.\n");
 
@@ -180,7 +183,14 @@
 
     new stygmorgan(argc,argv,&rmgmo);
   
-  
+    ControlInterface ctrl(&rmgmo);
+
+    std::thread([&ctrl]() {
+        std::string line;
+        while (std::getline(std::cin, line)) {
+            ctrl.process_input(line);
+        }
+    }).detach();
   
     while (Pexitprogram == 0)
       {

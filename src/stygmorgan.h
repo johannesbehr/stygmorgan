@@ -34,7 +34,11 @@
 #include <X11/xpm.h>
 #include <jack/jack.h>
 #include <jack/midiport.h>
+#include <vector>
+#include <string>
 
+
+#include "entt/entt.hpp"
 
 #include "config.h"
 #define MAGIC_FILE 0x4d546864
@@ -51,7 +55,6 @@ extern Pixmap p,mask;
 extern XWMHints *hints;
 extern int jack,alsa,exitwithhelp;
 extern struct song
-
 {
  int a;
  int b;
@@ -75,6 +78,11 @@ extern struct song
  int ar8a;
  int ar16a;
 } S[129];
+
+struct BeatEvent {
+    int bar;   // current measure (1...n)
+    int beat;  // beat within the bar (1...4 etc.)
+};
 
 struct MasterTempoData
 {
@@ -101,10 +109,16 @@ class RMGMO
 
 {
 
+private:
+    entt::dispatcher _dispatcher;
+
 public:
 
    RMGMO();
   ~RMGMO();
+
+  entt::dispatcher& events();
+   
    void ConvierteHexString();
     int BuscaPosTempo(int Compas, int Negra);
    void calctempo(int NewTempo);
@@ -212,7 +226,7 @@ public:
    void readstyles(char *filename);
    void readsounds(char *filename);
    void ponbasemix();
-   void ponmixpatternenmix(int patron);
+   void ponmixpatternenmix(int patron, bool forceUpdate = false);
    void ponsoundenmix();
    void ponmixensound();
    void ponmixenmixpattern(int patron);
@@ -249,11 +263,13 @@ public:
    void EPlay();
    int leer_bytes(FILE *fp, int n);
    unsigned long leer_delta(FILE *fp);
+   std::vector<std::string> get_styles();
+   void select_style(int id);
+  void set_variation(int vari, bool immediate);
 
   snd_seq_tick_time_t tick;
   snd_seq_t *seq_handle;
-  snd_seq_t *midi_in;
-  snd_seq_t *midi_out;
+  snd_seq_t *midi_in_out;
   snd_seq_tick_time_t ptick, ttick;
 
     jack_client_t *jackclient;
@@ -351,7 +367,9 @@ public:
   int lppq;
   int vum,ponvum;
   int sel;
-  int sic,nic,cc,sema,cambioc;
+  //int sic,nic,cc,sema,cambioc;
+  int nic,cc,sema,cambioc;
+  
   int ultimalanegra;
   int ultimalacas;
   int AFill;

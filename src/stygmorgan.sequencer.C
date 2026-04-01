@@ -32,36 +32,36 @@ RMGMO::SeqPlay()
 int lanota;
 int ncanal;
 
+int sic = 0;
 
 if (nStyle.ppq == 0) return;
 ttick = get_tick();
 ptick = ttick - (longi * patrones) - rema;
 negra=(( ptick/ nunegra ) % divisor) + 1;
 semi=(ptick /  (nunegra / 4)) % (divisor * 4) + 1;
-vcompas = (ptick / longic);
-if (negra != vnegra)
-{
-vnegra=negra;
-nic=1;
-if (vnegra==1)
-{
- scompas++;
- if (scompas > 1) cas++;
- MiraFin();
- cas=mirasaltos(cas);
- MiraCosas();
- ptick = ttick - (longi * patrones) - rema;
- sic=1;
 
-}
-if ((anti) && ((vnegra==1) || (vnegra==3)))
-{
- anti=0;
- posanti=0;
-}
-if ((vnegra==2) || (vnegra==4)) MiraAnti(vnegra);
-MiraAcorde(0,vnegra);
-if (SongF.MasterT) UsaTempoTrack();
+
+vcompas = (ptick / longic);
+if (negra != vnegra){
+  vnegra=negra;
+  nic=1;
+  if (vnegra==1){
+    scompas++;
+    if (scompas > 1) cas++;
+    MiraFin();
+    cas=mirasaltos(cas);
+    MiraCosas();
+    ptick = ttick - (longi * patrones) - rema;
+    sic=1;
+  }
+  if ((anti) && ((vnegra==1) || (vnegra==3)))
+  {
+    anti=0;
+    posanti=0;
+  }
+  if ((vnegra==2) || (vnegra==4)) MiraAnti(vnegra);
+  MiraAcorde(0,vnegra);
+  if (SongF.MasterT) UsaTempoTrack();
 }
 
 if ( ptick >= longi)
@@ -103,7 +103,10 @@ while (PEG[Variacion][cs].tipo==0) cs++;
 
 
 
-
+  // Fire BeatEvent on new beat
+  if(sic){
+    _dispatcher.trigger(BeatEvent{(int)vcompas, negra});
+  }
 
 };
 

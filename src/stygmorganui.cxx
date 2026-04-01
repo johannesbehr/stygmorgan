@@ -1484,9 +1484,14 @@ lavuelta=rmgmo->vuelve;
 rmgmo->vuelve=0;
 }
 else lavuelta=1;
-if (rmgmo->bplay ) PCVari(0,lavuelta); else 
-    CVari(0,lavuelta);
+//if (rmgmo->bplay ) PCVari(0,lavuelta); 
+//else 
+//CVari(0,lavuelta);
+rmgmo->set_variation(lavuelta, true);
 }
+
+
+
 void stygmorgan::cb_ListaStyles(Fl_Browser* o, void* v) {
   ((stygmorgan*)(o->parent()->parent()->user_data()))->cb_ListaStyles_i(o,v);
 }
@@ -1519,8 +1524,8 @@ void stygmorgan::cb_ListaSounds(Fl_Browser* o, void* v) {
 }
 
 void stygmorgan::cb_STST_i(Fl_Button* o, void*) {
-  rmgmo->bplay=o->value();
-if (o->value())
+  //rmgmo->bplay=o->value();
+if (!rmgmo->bplay)
 {
  ElSeq->deactivate();
  Menu->redraw();
@@ -1538,20 +1543,21 @@ void stygmorgan::cb_STST(Fl_Button* o, void* v) {
 }
 
 void stygmorgan::cb_DCompas_i(Fl_Box*, void*) {
+
   if(rmgmo->bplay)
 {
- rmgmo->EPlay();
+ //rmgmo->EPlay();
  semabplay();
 }
 
-rmgmo->miramidi();
+//rmgmo->miramidi();
 sema();
 
 
 
 if(rmgmo->splay) 
 {
-	rmgmo->SeqPlay();
+	//rmgmo->SeqPlay();
 
 	if (sponmix) 
 		{
@@ -1566,6 +1572,7 @@ if(rmgmo->splay)
 		}
 };
 }
+
 void stygmorgan::cb_DCompas(Fl_Box* o, void* v) {
   ((stygmorgan*)(o->parent()->parent()->user_data()))->cb_DCompas_i(o,v);
 }
@@ -4379,6 +4386,39 @@ Fl_Double_Window* stygmorgan::make_window() {
   return rmgmorganwin;
 }
 
+void stygmorgan::onBeatEvent(const BeatEvent& e) {
+  static char dcompas[3];
+  sprintf(dcompas,"%d",e.bar);
+  DCompas->label(dcompas);
+              
+  switch(e.beat){
+    case 1:
+      N1->activate();
+      N2->deactivate();
+      N3->deactivate();
+      N4->deactivate();
+    break;
+    case 2:
+      N2->activate();
+      N1->deactivate();
+      N3->deactivate();
+      N4->deactivate();
+    break;
+    case 3:
+      N3->activate();
+      N2->deactivate();
+      N1->deactivate();
+      N4->deactivate();
+    break;
+    case 4:
+      N4->activate();
+      N2->deactivate();
+      N3->deactivate();
+      N1->deactivate();
+    break;
+  }
+}
+
 stygmorgan::stygmorgan(int argc, char **argv,RMGMO *rmgmo_) {
   int x,y,w,h;
   
@@ -4389,7 +4429,31 @@ stygmorgan::stygmorgan(int argc, char **argv,RMGMO *rmgmo_) {
   
   rmgmo=rmgmo_;
   make_window();
+
+   rmgmo->events().sink<BeatEvent>()
+    .connect<&stygmorgan::onBeatEvent>(this);
+
+/*
+  Mix0->hide();
+  Mix1->hide();
+  Mix2->hide();
+  Mix3->hide();
+  Mix4->hide();
+
+  Botones->resize(
+    Botones->x() - 5*70,
+    Botones->y(),
+    Botones->w() + 30,
+    Botones->h()
+  );
   
+  Mix9->resize(
+    Mix9->x() - 5*70 + 30,
+    Mix9->y(),
+    Mix9->w() + 40,
+    Mix9->h()
+  );
+*/
   N1->deactivate();
   N2->deactivate();
   N3->deactivate();
@@ -4448,7 +4512,7 @@ stygmorgan::stygmorgan(int argc, char **argv,RMGMO *rmgmo_) {
 void stygmorgan::tick(void* v) {
   Fl_Box *o = (Fl_Box*)v;
   o->do_callback();
-  Fl::repeat_timeout(0.004,tick,v);
+  Fl::repeat_timeout(0.1,tick,v);
 }
 
 Fl_Double_Window* stygmorgan::MoreParams(int i) {
@@ -4768,6 +4832,21 @@ void stygmorgan::pontempo() {
 }
 
 void stygmorgan::Leer_Styles(int num) {
+
+  ListaStyles->clear();
+
+  auto styles = rmgmo->get_styles();
+
+  for (const auto& name : styles)
+  {
+      ListaStyles->add(name.c_str());
+  }
+
+  ListaStyles->value(num);
+  ListaStyles->do_callback();
+}
+/*
+void stygmorgan::Leer_Styles(int num) {
   int i;
   int k=0;
   memset(rmgmo->numLista, 0, sizeof rmgmo->numLista);
@@ -4793,7 +4872,7 @@ void stygmorgan::Leer_Styles(int num) {
   ListaStyles->value(num);
   ListaStyles->do_callback();
 }
-
+*/
 void stygmorgan::EnAp() {
   if ( rmgmo->tvb[1] != 0) bMainA->show(); else bMainA->hide();
   if ( rmgmo->tvb[2] != 0) bMainB->show(); else bMainB->hide();
@@ -4896,18 +4975,17 @@ void stygmorgan::CVari(int boton,int vari) {
   rmgmo->siguiente=rmgmo->tvb[boton];
   switch(boton)
   {
-  
     case 5:
     if(excep==0)
-    rmgmo->tiene=rmgmo->tvb[1];
+      rmgmo->tiene=rmgmo->tvb[1];
     else
-    rmgmo->tiene=rmgmo->tvb[2];
+      rmgmo->tiene=rmgmo->tvb[2];
     break;    
     case 6:
-    rmgmo->tiene=rmgmo->tvb[2];
+      rmgmo->tiene=rmgmo->tvb[2];
     break;    
     case 7:
-    rmgmo->tiene=rmgmo->tvb[3];
+      rmgmo->tiene=rmgmo->tvb[3];
     break;    
     case 8:
     rmgmo->tiene=rmgmo->tvb[4];
@@ -4918,9 +4996,6 @@ void stygmorgan::CVari(int boton,int vari) {
     case 16:
     rmgmo->tiene=rmgmo->tvb[2];
     break;    
-  
-  
-  
   }
   
   }
@@ -5276,7 +5351,6 @@ void stygmorgan::semabplay() {
                 rmgmo->sbot[rmgmo->tbotvar[rmgmo->Variacion]]=1;
                 ActuaBoton();
               }
-  
              if (rmgmo->endi)
               {
                 rmgmo->endi=0;
@@ -5284,12 +5358,14 @@ void stygmorgan::semabplay() {
                 apaga();
               }
   
+             /* 
              if (rmgmo->sic)
                {
+                sprintf(rmgmo->dcompas,"%d",rmgmo->vcompas);
                 DCompas->label(rmgmo->dcompas);
                 rmgmo->sic=0;
-                
                }
+  
                
              if (rmgmo->negra != rmgmo->onegra)
              { 
@@ -5326,12 +5402,14 @@ void stygmorgan::semabplay() {
   
                 }
              }
-             
+             */
+        /*
             if (rmgmo->semi != rmgmo->osemi)
             { 
               rmgmo->osemi=rmgmo->semi;
               FunciLeds(0);
-            }
+            }*/
+              
 }
 
 void stygmorgan::sema() {
@@ -5538,89 +5616,72 @@ void stygmorgan::labelwin(int i) {
   rmgmorganwin->copy_label(temp);
 }
 
-void stygmorgan::AcutaLeds(int ifun) {
-  Fl_Group * Elg=VumCanal9;
-  
-  int i;
-  int lacosa=0;
-  //int lapapa=0;
-  
-  for(i=9; i<=15;i++)
-  {
-    if (ifun==1)
+void stygmorgan::AcutaLeds(int ifun)
+{
+    // Precomputed thresholds für 7 LEDs
+    static const int threshold[7] = {17, 34, 51, 68, 85, 102, 119};
+
+    Fl_Group* groups[16] = {
+        nullptr, nullptr, nullptr, nullptr,
+        nullptr, nullptr, nullptr, nullptr,
+        nullptr, // 8
+        VumCanal9,
+        VumCanal10,
+        VumCanal11,
+        VumCanal12,
+        VumCanal13,
+        VumCanal14,
+        VumCanal15
+    };
+
+    for (int i = 9; i <= 15; i++)
     {
-     lacosa=0;
-   //  lapapa=1;
-     }
-      else 
-     {
-      lacosa=rmgmo->lastvelo[i];
-   //   lapapa=rmgmo->cocas[i];
-     }  
-  
-  switch(i)
-     { 
-        
-        case 10:
-              Elg=VumCanal10;
-              break;
-        case 11:
-              Elg=VumCanal11;
-              break;
-        case 12:
-              Elg=VumCanal12;
-              break;
-        case 13:
-              Elg=VumCanal13;
-              break;                        
-        case 14:
-              Elg=VumCanal14;
-              break;
-        case 15:
-              Elg=VumCanal15;
-              break;      
-      }        
-  
-  for ( int t=0; t<Elg->children(); t++ ) 
-    {          
-      Fl_Widget *w = Elg->child(t);
-      
-      if (((t+1)*127/7.5) >= lacosa)
+        Fl_Group* Elg = groups[i];
+        if (!Elg) continue;
+
+        int lacosa = (ifun == 1) ? 0 : rmgmo->lastvelo[i];
+
+        // 🔥 EARLY EXIT: wenn nix passiert ist → skip komplett
+        if (lacosa == 0 && rmgmo->cocas[i] == 0)
+            continue;
+
+        bool changed = false;
+        int children = Elg->children();
+
+        for (int t = 0; t < children && t < 7; t++)
         {
-             switch(t)
-                {
-                 case 5:
-                 w->color(82);
-                 break;
-                 case 6:
-                 w->color(80);
-                 break; 
-                 default:
-                 w->color(59);
-                 } 
-        
+            Fl_Widget* w = Elg->child(t);
+
+            Fl_Color new_color;
+
+            if (threshold[t] >= lacosa)
+            {
+                if (t == 5)      new_color = 82;
+                else if (t == 6) new_color = 80;
+                else             new_color = 59;
+            }
+            else
+            {
+                if (t == 5)      new_color = 133;
+                else if (t == 6) new_color = 1;
+                else             new_color = 2;
+            }
+
+            // Nur wenn sich wirklich etwas ändert
+            if (w->color() != new_color)
+            {
+                w->color(new_color);
+                changed = true;
+            }
         }
-      else
-        {     
-             switch(t)
-               {
-                 case 5:
-                 w->color(133);
-                 break;
-                 case 6:
-                 w->color(1);
-                 break;
-                 default:    
-                 w->color(2);
-               }  
-        }         
-     
-      w->redraw(); 
-    }
-    
-    rmgmo->cocas[i]=0;
-    rmgmo->lastvelo[i]=0;
-    
+
+        // 🔥 nur EIN redraw
+        if (changed)
+            Elg->redraw();
+
+        // Reset
+        rmgmo->cocas[i] = 0;
+        rmgmo->lastvelo[i] = 0;
     }
 }
 

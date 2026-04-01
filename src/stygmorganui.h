@@ -37,6 +37,7 @@ class stygmorgan {
 public:
   Fl_Double_Window* make_window();
   Fl_Double_Window *rmgmorganwin;
+   void onBeatEvent(const BeatEvent& e);
 private:
   inline void cb_rmgmorganwin_i(Fl_Double_Window*, void*);
   static void cb_rmgmorganwin(Fl_Double_Window*, void*);

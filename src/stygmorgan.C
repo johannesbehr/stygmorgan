@@ -25,7 +25,7 @@
 #include <Fl/Fl_Preferences.H>
 #include <X11/xpm.h>
 #include "stygmorgan.h"
-
+#include <pthread.h>
 
 int
 Pexitprogram,programa,espera,pera,chsel,x,y,sponmix,wabout,whelp,exitwithhelp,jack,alsa;
@@ -34,7 +34,30 @@ XWMHints *hints;
 int nojack;
 song S[129];
 songcon SongF;
+pthread_t seq_tid;
 
+void* seq_thread(void* arg)
+{
+    RMGMO* r = (RMGMO*)arg;
+
+    while (!Pexitprogram)
+    {
+        if (r->splay)
+            r->SeqPlay();
+
+        if (r->bplay)
+            r->EPlay();
+
+        r->miramidi();
+
+        usleep(2000); // 2 ms
+    }
+
+    return NULL;
+}
+
+// Access to event registration (via dispatcher)
+entt::dispatcher& RMGMO::events() { return _dispatcher; }
 
 RMGMO::RMGMO ()
 {
@@ -116,7 +139,6 @@ RMGMO::RMGMO ()
   sel=0;
   sema=0;
   cc=0;
-  sic=0;
   nic=0;
   ultimalanegra=0;
   ultimalacas=0;
@@ -380,28 +402,21 @@ NCE[20].note = -4;  NCE[21].note = -3; NCE[22].note = -2; NCE[23].note = -1;
   //ALSA init
 
 
-  snd_seq_open (&midi_out, "hw", SND_SEQ_OPEN_OUTPUT,0);
-  snd_seq_set_client_name(midi_out, "stygmorgan");  
-  snd_config_update_free_global();
-
-
-  snd_seq_open (&midi_in, "hw", SND_SEQ_OPEN_INPUT, 0);
-  snd_seq_set_client_name(midi_in, "stygmorgan");
+  snd_seq_open (&midi_in_out, "hw", SND_SEQ_OPEN_OUTPUT|SND_SEQ_OPEN_INPUT,0);
+  snd_seq_set_client_name(midi_in_out, "stygmorgan");  
   snd_config_update_free_global();
 
   char portname[50];
   sprintf (portname, "stygmorgan IN");
 
-  pmidi_in = snd_seq_create_simple_port (midi_in, portname,
+  pmidi_in = snd_seq_create_simple_port (midi_in_out, portname,
 					 SND_SEQ_PORT_CAP_WRITE |
 					 SND_SEQ_PORT_CAP_SUBS_WRITE,
 					 SND_SEQ_PORT_TYPE_APPLICATION);
 
   sprintf (portname, "stygmorgan OUT");
 
-
-      pmidi_out =
-	snd_seq_create_simple_port (midi_out, portname,
+  pmidi_out =	snd_seq_create_simple_port (midi_in_out, portname,
 				    SND_SEQ_PORT_CAP_READ |
 				    SND_SEQ_PORT_CAP_SUBS_READ,
 				    SND_SEQ_PORT_TYPE_APPLICATION);
@@ -487,13 +502,16 @@ if(val) Conecta();
 stygmorgan.get("TypeChordRec", val,0);
 TipoRecChord=val;
 espera=1;
+
+   pthread_create(&seq_tid, NULL, seq_thread, this);
+
 };
 
 
 RMGMO::~RMGMO ()
 {
-  snd_seq_close (midi_out);
-  snd_seq_close (midi_in);
+  snd_seq_close (midi_in_out);
+  pthread_join(seq_tid, NULL);
 };
 
 void

@@ -107,7 +107,7 @@ RMGMO::set_tempo()
 
   snd_seq_queue_tempo_set_tempo(queue_tempo, tempo);
   snd_seq_queue_tempo_set_ppq(queue_tempo, nStyle.ppq);
-  snd_seq_set_queue_tempo(midi_out, queue_id, queue_tempo);
+  snd_seq_set_queue_tempo(midi_in_out, queue_id, queue_tempo);
   snd_seq_queue_tempo_free(queue_tempo);
 
 
@@ -121,7 +121,7 @@ RMGMO::get_tick()
   snd_seq_queue_status_t *status;
   snd_seq_tick_time_t current_tick;
   snd_seq_queue_status_malloc(&status);
-  snd_seq_get_queue_status(midi_out, queue_id, status);
+  snd_seq_get_queue_status(midi_in_out, queue_id, status);
   current_tick = snd_seq_queue_status_get_tick_time(status);
   snd_seq_queue_status_free(status);
   return(current_tick);
@@ -131,8 +131,8 @@ void
 RMGMO::init_queue() 
 {
 
- queue_id = snd_seq_alloc_queue(midi_out);
- snd_seq_set_client_pool_output(midi_out, 2048);
+ queue_id = snd_seq_alloc_queue(midi_in_out);
+ snd_seq_set_client_pool_output(midi_in_out, 2048);
 }
 
 void 
@@ -143,7 +143,7 @@ RMGMO::clear_queue()
   snd_seq_remove_events_malloc(&remove_ev);
   snd_seq_remove_events_set_queue(remove_ev, queue_id);
   snd_seq_remove_events_set_condition(remove_ev, SND_SEQ_REMOVE_OUTPUT | SND_SEQ_REMOVE_IGNORE_OFF);
-  snd_seq_remove_events(midi_out, remove_ev);
+  snd_seq_remove_events(midi_in_out, remove_ev);
   snd_seq_remove_events_free(remove_ev);
 
 }
@@ -273,7 +273,7 @@ RMGMO::sacadirecto(long len, snd_seq_event_t *midievent)
 
       snd_seq_ev_set_subs (midievent);
       snd_seq_ev_set_direct (midievent);
-      snd_seq_event_output_direct(midi_out, midievent);
+      snd_seq_event_output_direct(midi_in_out, midievent);
 
 
 };

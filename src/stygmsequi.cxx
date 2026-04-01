@@ -266,57 +266,58 @@ void sequencer::cb_SSTST(Fl_Button* o, void* v) {
 
 void sequencer::cb_Casi_i(Fl_Box*, void*) {
   if(rmgmo->nic)
-{
- rmgmo->nic=0;
- char tmp[12];
- bzero(tmp,sizeof(tmp));
- sprintf(tmp,"%d/%d",rmgmo->scompas,rmgmo->vnegra); 
- Bar->copy_label(tmp);
- UpdateInputs(rmgmo->cas,rmgmo->vnegra);
- 
- 
-}  
-
+  {
+  rmgmo->nic=0;
+  char tmp[12];
+  bzero(tmp,sizeof(tmp));
+  sprintf(tmp,"%d/%d",rmgmo->scompas,rmgmo->vnegra); 
+  Bar->copy_label(tmp);
+  UpdateInputs(rmgmo->cas,rmgmo->vnegra);
+  
+  
+  }  
+/*
 if (rmgmo->sic)
 {
  rmgmo->sic=0;
  Slider->value(rmgmo->cas);
  Slider->do_callback();
  UpdateBros();
+}*/
+
+  if (rmgmo->cc1)
+  {
+    rmgmo->cc1=0;
+    NomChord->copy_label(rmgmo->NombreAcorde);
+  }
+
+  if (rmgmo->finito)
+  {
+    rmgmo->finito=0;
+    SSTST->value(0);
+    SSTST->do_callback();
+  }
+
+  if(rmgmo->MTempo)
+  {
+    STempo->value(rmgmo->MTempo);
+    rmgmo->MTempo=0;
+  }
+  
+  if (rmgmo->CNStyle)
+  {
+    rmgmo->CNStyle=0;
+    NomStyle->copy_label(rmgmo->nStyle.Name);
+  }
+
+
+  if (rmgmo->CNPattern)
+  {
+    rmgmo->CNPattern=0;
+    NomPattern->copy_label(rmgmo->nStyle.Pattern[rmgmo->Variacion].Name);
+  };
 }
 
-if (rmgmo->cc1)
-{
-  rmgmo->cc1=0;
-  NomChord->copy_label(rmgmo->NombreAcorde);
-}
-
-if (rmgmo->finito)
-{
-  rmgmo->finito=0;
-  SSTST->value(0);
-  SSTST->do_callback();
-}
-
-if(rmgmo->MTempo)
- {
-   STempo->value(rmgmo->MTempo);
-   rmgmo->MTempo=0;
- }
- 
-if (rmgmo->CNStyle)
-{
-  rmgmo->CNStyle=0;
-  NomStyle->copy_label(rmgmo->nStyle.Name);
-}
-
-
-if (rmgmo->CNPattern)
-{
-   rmgmo->CNPattern=0;
-   NomPattern->copy_label(rmgmo->nStyle.Pattern[rmgmo->Variacion].Name);
-};
-}
 void sequencer::cb_Casi(Fl_Box* o, void* v) {
   ((sequencer*)(o->parent()->parent()->user_data()))->cb_Casi_i(o,v);
 }

@@ -30,53 +30,48 @@ RMGMO::EPlay()
 {
 int lanota;
 int ncanal;
+int cnegra;
+
 if (nStyle.ppq == 0) return;
 ttick = get_tick();
 
 ptick = ttick - (longi * patrones) - rema;
-negra=(( ptick / nunegra ) % divisor) + 1;
+cnegra=(( ptick / nunegra ) % divisor) + 1;
 semi=(ptick / (nunegra / 4)) % (divisor * 4) + 1; 
 
-if ((ptick / longic) + 1 != vcompas) 
-{
-sic=1;
-vcompas = (ptick / longic) + 1;
-sprintf(dcompas,"%d",vcompas);
+if ((ptick / longic) + 1 != vcompas) {
+  vcompas = (ptick / longic) + 1;
+}
+
+if ((tiene>0) && (vcompas == nStyle.Pattern[Variacion].bars) && (cnegra == 1) && (semi == 1)){
+  if (nStyle.Pattern[siguiente].bars < nStyle.Pattern[Variacion].bars){
+    if (tiene>0){
+      MiraSiNext();
+      if (ptick > 0) rema=0;
+      cs=0;
+      ptick = 0;
+      vcompas = 1;
+    }
+  }
 }
 
 
-if ((tiene>0) && (vcompas == nStyle.Pattern[Variacion].bars) && (negra == 1) && (semi == 1))
-{
-     if (nStyle.Pattern[siguiente].bars < nStyle.Pattern[Variacion].bars)
-     {
-     if (tiene>0)
-     {
-     MiraSiNext();
-     if (ptick > 0) rema=0;
-     cs=0;
-     ptick = 0;
-     }
-     }
-}
-
-
-if ( ptick >= longi)
-    {
+if ( ptick >= longi){
       patrones++;
       MiraSiNext();
       cs=0;
       ptick = 0;
-    }
+      vcompas = 1;
+}
 
-if (jack)
-{ 
-PonNotesOffOrgan(0,ttick);
-if (endi==1)
-{
-  ostop();
-  bplay=0;
-  return;
-} 
+if (jack){ 
+  PonNotesOffOrgan(0,ttick);
+  if (endi==1)
+  {
+    ostop();
+    bplay=0;
+    return;
+  } 
 }
 
         while (PEG[Variacion][cs].tipo==0)
@@ -101,6 +96,13 @@ if (endi==1)
                 }
             cs++;
           }
+
+
+  // Fire BeatEvent on new beat
+  if(cnegra!= negra){
+    negra = cnegra;
+    _dispatcher.trigger(BeatEvent{(int)vcompas, negra});
+  }
 
 };
 
@@ -171,7 +173,7 @@ switch(tipo)
           snd_seq_ev_schedule_tick(&ev, queue_id,  0, gtick);
           snd_seq_ev_set_source(&ev, pmidi_out);
           snd_seq_ev_set_subs (&ev);
-          snd_seq_event_output_direct(midi_out, &ev);         
+          snd_seq_event_output_direct(midi_in_out, &ev);         
           }
 
 };
@@ -179,16 +181,17 @@ switch(tipo)
 void
 RMGMO::ostart()
 {
+      bplay = 1;
       Pendientes=0;
       memset(PO,0 ,sizeof PO);
       nStyle.har=0;
       init_queue();
       enviosincro(1);
-      snd_seq_start_queue(midi_out,queue_id, NULL);
+      snd_seq_start_queue(midi_in_out,queue_id, NULL);
       rela=1.0;
       set_tempo();
       if(jack)pontempoenjack();
-      snd_seq_drain_output(midi_out); 
+      snd_seq_drain_output(midi_in_out); 
       cs = 0;
       vcompas=0;
       scompas=0;
@@ -198,13 +201,14 @@ RMGMO::ostart()
       patrones=0;
       anti=0;
       posanti=0;
-      if (bplay) EPlay();
-      if (splay) SeqPlay();
+//      if (bplay) EPlay();
+//      if (splay) SeqPlay();
 };
 
 void
 RMGMO::ostop()
 {
+    bplay = 0;
 
     if(jack)
     {
@@ -216,10 +220,82 @@ RMGMO::ostop()
     panico(0,0,15);
     clear_queue();
     enviosincro(0);
-    snd_seq_stop_queue(midi_out, queue_id, NULL);
-    snd_seq_free_queue(midi_out, queue_id);
+    snd_seq_stop_queue(midi_in_out, queue_id, NULL);
+    snd_seq_free_queue(midi_in_out, queue_id);
 
 };
+
+std::vector<std::string> RMGMO::get_styles()
+{
+    std::vector<std::string> result;
+
+    int k = 0;
+    memset(numLista, 0, sizeof numLista);
+
+    for (int i = 0; i < numstyles; i++)
+    {
+        if (SStipo == 0 || StyleNom[i].style == (SStipo - 1))
+        {
+            k++;
+            result.push_back(StyleNom[i].Name);
+            numLista[k] = i + 1;
+        }
+    }
+
+    return result;
+}
+
+void RMGMO::select_style(int id)
+{
+    if (id <= 0 || id > numstyles) return;
+
+    if (!bplay)
+    {
+        rela = 1.0;
+        lppq = 1;
+    }
+
+    EventoCambia = 0;
+    memset(&nStyle, 0, sizeof(nStyle));
+
+    Estilo = id;
+    readstyle(Estilo);
+
+    isnew = 0;
+
+    if (!bplay)
+        bpm = nStyle.bpm;
+
+    set_tempo();
+    AsignaTabla();
+
+    int lavuelta = (vuelve != 0) ? vuelve : 1;
+    vuelve = 0;
+
+    set_variation(lavuelta, true);
+}
+
+
+void RMGMO::set_variation(int vari, bool immediate){
+if (immediate)
+{
+    buscacs(vari);
+    Variacion = vari;
+    mirapc(Variacion);
+    BuscaSi();
+    ponmixpatternenmix(Variacion, true);
+
+    siguiente = vari;
+    BuscaNext();
+}else
+{
+    siguiente = vari;
+
+    // optional:
+    // Fill-Logik später separat
+}
+
+}
 
 void
 RMGMO::mirapc(int variacion)
@@ -330,11 +406,11 @@ RMGMO::BuscaSi()
 };
 
 void
-RMGMO::ponmixpatternenmix(int patron)
+RMGMO::ponmixpatternenmix(int patron, bool forceUpdate)
 {
    int i;
 
-if ((bplay) || (splay))
+if ((bplay) || (splay)|| (forceUpdate))
 {
 
   for(i=9; i<=15; i++)

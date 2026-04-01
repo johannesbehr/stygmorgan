@@ -30,17 +30,17 @@ RMGMO::miramidi()
   snd_seq_event_t *midievent;
 
 
-if (snd_seq_event_input_pending (midi_in, 1))
+if (snd_seq_event_input_pending (midi_in_out, 0))
 {
     do
     {
         midievent = NULL;
-        snd_seq_event_input (midi_in, &midievent);
+        snd_seq_event_input (midi_in_out, &midievent);
         midievents(midievent);
         snd_seq_ev_clear(midievent);
         snd_seq_free_event(midievent);
     }
-    while (snd_seq_event_input_pending (midi_in, 0));
+    while (snd_seq_event_input_pending (midi_in_out, 0));
 }
 
 

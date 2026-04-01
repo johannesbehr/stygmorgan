@@ -1,0 +1,10 @@
+entt-support:
+
+ ln -s ~/projects/entt/src/entt entt
+
+
+CXXFLAGS="-std=gnu++20" ./configure
+
+make clean
+make
+

@@ -36,6 +36,8 @@ stygmorgan_SOURCES = main.C \
 	choice.h \
 	jack.h \
 	jack.C \
+	controlinterface.C \
+	controlinterface.h \
 	stygmorgan.h
 
 
