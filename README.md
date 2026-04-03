@@ -1,3 +1,17 @@
+# Warning Work in Progres!!!
+
+This is my Fork of the great and very cool program stygmorgan. I am running it on a Raspberry Pi 5 with a custom Organ I build (on Base of a Solina A204).
+It is not a finsihed projekt, if you just want to uses stygmorgan, i suggest you should use the orignal repository!
+
+I am working on the following steps:
+- de-coupling GUI and Engine
+- Implement the use of events with enTT
+- Integrate a JSON-Based control interface to use the amazing powerfull engine with other Apps
+  (In my case: My PiOrgan!) 
+
+Feel free to contact me (w.mager(at)gmx.de) if you want join developemnt or exchange some ideas about DIY Music!
+
+
 # stygmorgan
 A arranger keyboard emulator
 ![A arranger keyboard emulator](https://github.com/holborn2019/stygmorgan/blob/master/extra/sty.png)
