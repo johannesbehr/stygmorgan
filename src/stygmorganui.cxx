@@ -1525,19 +1525,24 @@ void stygmorgan::cb_ListaSounds(Fl_Browser* o, void* v) {
 
 void stygmorgan::cb_STST_i(Fl_Button* o, void*) {
   //rmgmo->bplay=o->value();
+ rmgmo->otoggle(); 
+
+  /*
 if (!rmgmo->bplay)
 {
  ElSeq->deactivate();
  Menu->redraw();
  N1->activate(); 
  rmgmo->ostart(); 
-} 
+}
+ 
  else 
 {
 rmgmo->ostop();
 apaga();
-};
+};*/
 }
+
 void stygmorgan::cb_STST(Fl_Button* o, void* v) {
   ((stygmorgan*)(o->parent()->parent()->user_data()))->cb_STST_i(o,v);
 }
@@ -4419,6 +4424,31 @@ void stygmorgan::onBeatEvent(const BeatEvent& e) {
   }
 }
 
+void stygmorgan::onTransportStateEvent(const TransportStateEvent& e) {
+   switch(e.state) {
+        case TransportState::Stopped:
+            //std::cout << "Stopped\n";
+            apaga();
+            STST->value(0);
+            //STST->do_callback();
+        break;
+
+        case TransportState::Playing:
+            //std::cout << "Playing\n";
+            STST->value(1);
+            //STST->do_callback();
+            if (e.sequencerEnabled) {
+                //std::cout << "Sequenzer enabled.\n";
+              // Sequencer UI anzeigen
+              } else {
+                  // normales UI
+              }
+
+            break;
+    }
+}
+
+
 stygmorgan::stygmorgan(int argc, char **argv,RMGMO *rmgmo_) {
   int x,y,w,h;
   
@@ -4432,6 +4462,9 @@ stygmorgan::stygmorgan(int argc, char **argv,RMGMO *rmgmo_) {
 
    rmgmo->events().sink<BeatEvent>()
     .connect<&stygmorgan::onBeatEvent>(this);
+
+    rmgmo->events().sink<TransportStateEvent>()
+    .connect<&stygmorgan::onTransportStateEvent>(this);
 
 /*
   Mix0->hide();
@@ -5351,13 +5384,15 @@ void stygmorgan::semabplay() {
                 rmgmo->sbot[rmgmo->tbotvar[rmgmo->Variacion]]=1;
                 ActuaBoton();
               }
+
+              /*
              if (rmgmo->endi)
               {
                 rmgmo->endi=0;
                 STST->value(0);
                 apaga();
               }
-  
+              */
              /* 
              if (rmgmo->sic)
                {
@@ -5475,8 +5510,8 @@ void stygmorgan::sema() {
                  		{
                   		if(rmgmo->bplay)
                  				 {
-                  			  STST->value(0);
-                  			  STST->do_callback();
+                  			  //STST->value(0);
+                  			  //STST->do_callback();
                   			 }
           		        SaveStylesFunction(); 
                 		} 
@@ -5495,8 +5530,8 @@ void stygmorgan::sema() {
                {
                  rmgmo->ponstart=0;
                  rmgmo->bplay=1;
-                 STST->value(1);
-                 STST->do_callback();
+                 //STST->value(1);
+                 //STST->do_callback();
                }
                
                
@@ -5543,15 +5578,16 @@ void stygmorgan::sema() {
      if (rmgmo->rtplay==1)
       { 
         rmgmo->rtplay=3; 
-       if (STST->value()) STST->value(0); else STST->value(1);
-       STST->do_callback();
+       /*
+        if (STST->value()) STST->value(0); else STST->value(1);
+       STST->do_callback();*/
       } 
        
      if (rmgmo->rtplay==2)
       { 
         rmgmo->rtplay=0; 
-       if (STST->value()) STST->value(0); else STST->value(0);
-       STST->do_callback();
+       /*if (STST->value()) STST->value(0); else STST->value(0);
+       STST->do_callback();*/
       } 
        
         
@@ -5559,8 +5595,9 @@ void stygmorgan::sema() {
      if (rmgmo->pbStart)
      {
        rmgmo->pbStart=0;
+       /*
        if (STST->value()) STST->value(0); else STST->value(1);
-       STST->do_callback();
+       STST->do_callback();*/
      }
      
       if (rmgmo->pbAutoF)

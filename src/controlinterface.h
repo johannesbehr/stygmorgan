@@ -18,7 +18,7 @@ public:
 private:
     RMGMO* rmgmo;
     void onBeatEvent(const BeatEvent& e);
-
+    void onTransportStateEvent(const TransportStateEvent& e);
     void send_ok();
     void send_error(const std::string& msg);
 };

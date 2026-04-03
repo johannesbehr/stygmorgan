@@ -203,6 +203,10 @@ RMGMO::ostart()
       posanti=0;
 //      if (bplay) EPlay();
 //      if (splay) SeqPlay();
+
+      // Fire TransportStateEvent
+      _dispatcher.trigger(TransportStateEvent{TransportState::Playing, false});
+
 };
 
 void
@@ -223,7 +227,18 @@ RMGMO::ostop()
     snd_seq_stop_queue(midi_in_out, queue_id, NULL);
     snd_seq_free_queue(midi_in_out, queue_id);
 
+    // Fire TransportStateEvent
+    _dispatcher.trigger(TransportStateEvent{TransportState::Stopped, false});
 };
+
+void RMGMO::otoggle(){
+  if (!bplay){
+    ostart(); 
+  } else {
+    ostop();
+  };
+}
+
 
 std::vector<std::string> RMGMO::get_styles()
 {

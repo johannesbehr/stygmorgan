@@ -10,13 +10,19 @@ ControlInterface::ControlInterface(RMGMO* engine)
 {
     engine->events().sink<BeatEvent>()
     .connect<&ControlInterface::onBeatEvent>(this);
+    engine->events().sink<TransportStateEvent>()
+    .connect<&ControlInterface::onTransportStateEvent>(this);
 }
 
 void ControlInterface::onBeatEvent(const BeatEvent& e) {
    // if (e.sender == &tank1) 
-   std::cout << "Beatevent (" << e.beat <<" - " << e.bar  << " )\n";
+   //std::cout << "Beatevent (" << e.beat <<" - " << e.bar  << " )\n";
+   // Todo: pass Event to client
 }
 
+void ControlInterface::onTransportStateEvent(const TransportStateEvent& e) {
+   // Todo: pass Event to client
+}
 
 void ControlInterface::send_ok()
 {

@@ -84,6 +84,16 @@ struct BeatEvent {
     int beat;  // beat within the bar (1...4 etc.)
 };
 
+enum class TransportState {
+    Stopped,
+    Playing
+};
+
+struct TransportStateEvent {
+    TransportState state;
+    bool sequencerEnabled;
+};
+
 struct MasterTempoData
 {
  int bar;
@@ -239,6 +249,7 @@ public:
    void panico(int data, int canal1, int canal2);
    void ostart();
    void ostop();
+   void otoggle();
    void midievents(snd_seq_event_t *midievent);
    void sacadirecto(long len, snd_seq_event_t *midievent);
    void sacaorgan(int len, snd_seq_event_t *midievent, snd_seq_tick_time_t gtick, int glen);

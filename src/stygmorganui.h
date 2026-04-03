@@ -38,11 +38,13 @@ public:
   Fl_Double_Window* make_window();
   Fl_Double_Window *rmgmorganwin;
    void onBeatEvent(const BeatEvent& e);
+   void onTransportStateEvent(const TransportStateEvent& e);
+   
 private:
   inline void cb_rmgmorganwin_i(Fl_Double_Window*, void*);
   static void cb_rmgmorganwin(Fl_Double_Window*, void*);
 public:
-  Fl_Group *Mix0;
+    Fl_Group *Mix0;
   MiDial *Pan0;
 private:
   inline void cb_Pan0_i(MiDial*, void*);
