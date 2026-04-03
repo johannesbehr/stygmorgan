@@ -4,21 +4,72 @@
 #include "stygmorgan.h"
 
 #include <string>
+#include <thread>
+#include <queue>
+#include <mutex>
+#include <condition_variable>
+#include <atomic>
 
+struct Message {
+    enum Type { RESPONSE, EVENT } type;
+    std::string payload;
+};
 
-class RMGMO;  // forward declaration
+class MessageQueue {
+public:
+    void push(const Message& msg);
+    Message pop();
+
+private:
+    std::queue<Message> q;
+    std::mutex m;
+    std::condition_variable cv;
+};
 
 class ControlInterface {
 public:
-    ControlInterface(RMGMO* engine);
+    enum Mode {
+        STDIO,
+        FIFO
+    };
 
-    // verarbeitet eine JSON-Zeile
-    void process_input(const std::string& line);
+    ControlInterface(RMGMO* engine);
+    ~ControlInterface();
+
+    // NEU
+    bool init_pipe(Mode mode,
+                   const std::string& in = "",
+                   const std::string& out = "");
+
+    void start();
 
 private:
     RMGMO* rmgmo;
+
+    int read_fd = -1;
+    int write_fd = -1;
+
+    MessageQueue queue;
+
+    std::thread writer_thread;
+    std::thread reader_thread;
+
+    std::atomic<bool> running;
+
+    std::mutex command_mutex;
+
+    // intern
+    void writer_loop();
+    void reader_loop();
+
+    void process_input(const std::string& line);
+
+    // events
     void onBeatEvent(const BeatEvent& e);
     void onTransportStateEvent(const TransportStateEvent& e);
+
+    // send
+    void send_json(const std::string& json);
     void send_ok();
     void send_error(const std::string& msg);
 };

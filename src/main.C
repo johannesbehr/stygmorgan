@@ -184,13 +184,8 @@
     new stygmorgan(argc,argv,&rmgmo);
   
     ControlInterface ctrl(&rmgmo);
-
-    std::thread([&ctrl]() {
-        std::string line;
-        while (std::getline(std::cin, line)) {
-            ctrl.process_input(line);
-        }
-    }).detach();
+    ctrl.init_pipe(ControlInterface::STDIO);   // or FIFO
+    ctrl.start();
   
     while (Pexitprogram == 0)
       {

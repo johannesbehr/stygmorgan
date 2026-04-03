@@ -1,44 +1,176 @@
 #include "controlinterface.h"
+
+#include <unistd.h>
+#include <fcntl.h>
 #include <iostream>
 #include <sstream>
 #include <nlohmann/json.hpp>
 
 using json = nlohmann::json;
 
+//
+// Queue
+//
+
+void MessageQueue::push(const Message& msg) {
+    std::lock_guard<std::mutex> lock(m);
+    q.push(msg);
+    cv.notify_one();
+}
+
+Message MessageQueue::pop() {
+    std::unique_lock<std::mutex> lock(m);
+    cv.wait(lock, [&]{ return !q.empty(); });
+
+    Message msg = q.front();
+    q.pop();
+    return msg;
+}
+
+//
+// ControlInterface
+//
+
 ControlInterface::ControlInterface(RMGMO* engine)
-    : rmgmo(engine)
+    : rmgmo(engine), running(false)
 {
     engine->events().sink<BeatEvent>()
-    .connect<&ControlInterface::onBeatEvent>(this);
+        .connect<&ControlInterface::onBeatEvent>(this);
+
     engine->events().sink<TransportStateEvent>()
-    .connect<&ControlInterface::onTransportStateEvent>(this);
+        .connect<&ControlInterface::onTransportStateEvent>(this);
 }
 
-void ControlInterface::onBeatEvent(const BeatEvent& e) {
-   // if (e.sender == &tank1) 
-   //std::cout << "Beatevent (" << e.beat <<" - " << e.bar  << " )\n";
-   // Todo: pass Event to client
+ControlInterface::~ControlInterface() {
+    running = false;
+
+    queue.push({Message::EVENT, ""});
+
+    if (reader_thread.joinable()) reader_thread.join();
+    if (writer_thread.joinable()) writer_thread.join();
 }
 
-void ControlInterface::onTransportStateEvent(const TransportStateEvent& e) {
-   // Todo: pass Event to client
-}
+//
+// INIT
+//
 
-void ControlInterface::send_ok()
+bool ControlInterface::init_pipe(Mode mode,
+                                const std::string& in,
+                                const std::string& out)
 {
-    std::cout << R"({"status":"ok"})" << std::endl;
+    if (mode == STDIO) {
+        read_fd  = STDIN_FILENO;
+        write_fd = STDOUT_FILENO;
+        return true;
+    }
+
+    if (mode == FIFO) {
+        read_fd = open(in.c_str(), O_RDONLY);
+        write_fd = open(out.c_str(), O_WRONLY);
+
+        if (read_fd < 0 || write_fd < 0) {
+            perror("fifo open");
+            return false;
+        }
+        return true;
+    }
+
+    return false;
 }
 
-void ControlInterface::send_error(const std::string& msg)
-{
+//
+// START
+//
+
+void ControlInterface::start() {
+    running = true;
+
+    reader_thread = std::thread(&ControlInterface::reader_loop, this);
+    writer_thread = std::thread(&ControlInterface::writer_loop, this);
+}
+
+//
+// THREADS
+//
+
+void ControlInterface::reader_loop() {
+    char buffer[1024];
+    std::string line;
+
+    while (running) {
+        ssize_t n = read(read_fd, buffer, sizeof(buffer)-1);
+        if (n <= 0) continue;
+
+        buffer[n] = '\0';
+        line += buffer;
+
+        size_t pos;
+        while ((pos = line.find('\n')) != std::string::npos) {
+            std::string cmd = line.substr(0, pos);
+            line.erase(0, pos + 1);
+
+            process_input(cmd);
+        }
+    }
+}
+
+void ControlInterface::writer_loop() {
+    while (running) {
+        Message msg = queue.pop();
+        if (!running) break;
+
+        std::string out = msg.payload + "\n";
+        write(write_fd, out.c_str(), out.size());
+    }
+}
+
+//
+// SEND
+//
+
+void ControlInterface::send_json(const std::string& s) {
+    queue.push({Message::RESPONSE, s});
+}
+
+void ControlInterface::send_ok() {
+    send_json(R"({"status":"ok"})");
+}
+
+void ControlInterface::send_error(const std::string& msg) {
     json j;
     j["status"] = "error";
     j["msg"] = msg;
-    std::cout << j.dump() << std::endl;
+    send_json(j.dump());
 }
+
+//
+// EVENTS
+//
+
+void ControlInterface::onBeatEvent(const BeatEvent& e) {
+    json j;
+    j["event"] = "beat";
+    j["beat"] = e.beat;
+    j["bar"] = e.bar;
+
+    queue.push({Message::EVENT, j.dump()});
+}
+
+void ControlInterface::onTransportStateEvent(const TransportStateEvent& e) {
+    json j;
+    j["event"] = "transport";
+    j["state"] = e.state;
+
+    queue.push({Message::EVENT, j.dump()});
+}
+
+//
+// COMMANDS
+//
 
 void ControlInterface::process_input(const std::string& line)
 {
+    std::lock_guard<std::mutex> lock(command_mutex);
 
     if (!json::accept(line)) {
         send_error("invalid json");
@@ -47,82 +179,35 @@ void ControlInterface::process_input(const std::string& line)
 
     auto j = json::parse(line);
 
-    if (!j.contains("cmd")) {
-        send_error("missing cmd");
-        return;
-    }
+    std::string cmd = j.value("cmd", "");
 
-    std::string cmd = j["cmd"];
-
-    // --- START ---
     if (cmd == "ostart") {
-        if (rmgmo) {
-            if(!rmgmo->bplay){
-                rmgmo->ostart();
-                send_ok();
-            } else {
-                send_error("engine already playing");
-            }
-        } else {
-            send_error("engine not available");
-        }
+        rmgmo->ostart();
+        send_ok();
     }
-
-    // --- STOP ---
     else if (cmd == "ostop") {
-        if (rmgmo) {
-            if(rmgmo->bplay){
-                rmgmo->ostop();
-                send_ok();
-            } else {
-                send_error("engine not playing");
-            }
-        } else {
-            send_error("engine not available");
-        }
+        rmgmo->ostop();
+        send_ok();
     }
-
-    // --- TEMPO ---
     else if (cmd == "tempo") {
-        if (!j.contains("value")) {
-            send_error("missing value");
-            return;
-        }
-
-        int bpm = j["value"];
-
-        if (rmgmo) {
-            rmgmo->bpm = bpm;
-            rmgmo->set_tempo();
-            send_ok();
-        } else {
-            send_error("engine not available");
-        }
+        int bpm = j.value("value", 120);
+        rmgmo->bpm = bpm;
+        rmgmo->set_tempo();
+        send_ok();
     }
-
-    // --- LIST STYLES (Dummy erstmal) ---
     else if (cmd == "list_styles") {
-    auto styles = rmgmo->get_styles();
+        auto styles = rmgmo->get_styles();
+        json j_out;
+        j_out["styles"] = styles;
 
-    std::cout << "{ \"styles\": [";
-
-    for (size_t i = 0; i < styles.size(); ++i) {
-        std::cout << "\"" << styles[i] << "\"";
-        if (i < styles.size() - 1) std::cout << ",";
+        send_json(j_out.dump());
     }
-
-    std::cout << "] }" << std::endl;
-    }
-
     else if (cmd == "select_style") {
         int id = j["id"];
         rmgmo->select_style(id);
-        std::cout << "{ \"status\": \"ok\" }" << std::endl;
+        send_ok();
     }
-
-    // --- UNKNOWN ---
     else {
         send_error("unknown command");
     }
-
 }
