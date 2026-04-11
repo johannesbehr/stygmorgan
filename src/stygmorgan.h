@@ -94,6 +94,11 @@ struct TransportStateEvent {
     bool sequencerEnabled;
 };
 
+struct ChannelStateEvent {
+    int channel;
+    bool enabled; 
+};
+
 struct MasterTempoData
 {
  int bar;
@@ -250,6 +255,9 @@ public:
    void ostart();
    void ostop();
    void otoggle();
+
+  void ctoggle(int channel, int enable = -1);
+  
    void midievents(snd_seq_event_t *midievent);
    void sacadirecto(long len, snd_seq_event_t *midievent);
    void sacaorgan(int len, snd_seq_event_t *midievent, snd_seq_tick_time_t gtick, int glen);
@@ -277,6 +285,9 @@ public:
    std::vector<std::string> get_styles();
    void select_style(int id);
   void set_variation(int vari, bool immediate);
+
+  void startMidiQueue();
+  void stopMidiQueue(); 
 
   snd_seq_tick_time_t tick;
   snd_seq_t *seq_handle;

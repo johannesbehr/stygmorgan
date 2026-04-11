@@ -37,9 +37,7 @@ public:
     ~ControlInterface();
 
     // NEU
-    bool init_pipe(Mode mode,
-                   const std::string& in = "",
-                   const std::string& out = "");
+    bool init_pipe(Mode mode);
 
     void start();
 
@@ -48,6 +46,8 @@ private:
 
     int read_fd = -1;
     int write_fd = -1;
+    Mode mode;
+    
 
     MessageQueue queue;
 

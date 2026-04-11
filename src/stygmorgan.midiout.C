@@ -23,7 +23,7 @@
 
 #include "stygmorgan.h"
 #include "jack.h"
-
+#include <iostream>
 
 void 
 RMGMO::enviobend(int canal,int valor)
@@ -64,7 +64,12 @@ RMGMO::envioprograma(int canal, int programa)
     snd_seq_event_t midievent;
     snd_seq_ev_clear (&midievent);
     snd_seq_ev_set_pgmchange (&midievent, canal, programa);
+    
+    std::cout << "Program change: channel " << canal << ", program " << programa << std::endl;
+
     sacadirecto(2,&midievent);
+
+
 }
 
 
@@ -148,8 +153,25 @@ RMGMO::clear_queue()
 
 }
 
+void RMGMO::startMidiQueue() 
+{
+    init_queue();
+    enviosincro(1);
+    snd_seq_start_queue(midi_in_out,queue_id, NULL);
+    rela=1.0;
+    set_tempo();
+    if(jack)pontempoenjack();
+    snd_seq_drain_output(midi_in_out); 
+};
 
-
+void RMGMO::stopMidiQueue() 
+{
+    panico(0,0,15);
+    clear_queue();
+    enviosincro(0);
+    snd_seq_stop_queue(midi_in_out, queue_id, NULL);
+    snd_seq_free_queue(midi_in_out, queue_id);
+};
 
 void
 RMGMO::panico (int data, int canal1, int canal2)
@@ -199,17 +221,17 @@ RMGMO::silent(int data, int canal1, int canal2)
 void 
 RMGMO::envionota(int canal,int nota, int velocity )
 {
-     
-     time_t result;
-     result = time(NULL);
 
      snd_seq_event_t ev;
      snd_seq_ev_clear(&ev);
      snd_seq_ev_set_noteon(&ev,canal,nota,velocity);
-
      sacadirecto(3,&ev);
-     if (velocity > 0) ponPendientesEE(nota,canal,result+1); 
 
+     if (velocity > 0) {
+      time_t result;
+      result = time(NULL);
+      ponPendientesEE(nota,canal,result+1); 
+     }
 
 };
 
@@ -271,12 +293,13 @@ RMGMO::sacadirecto(long len, snd_seq_event_t *midievent)
       ev_count++;
       }
 
-      snd_seq_ev_set_subs (midievent);
-      snd_seq_ev_set_direct (midievent);
-      snd_seq_event_output_direct(midi_in_out, midievent);
+   snd_seq_ev_set_direct (midievent);
+   snd_seq_ev_set_subs(midievent);
+
+    snd_seq_event_output_direct(midi_in_out, midievent);
 
 
-};
+}
 
 void
 RMGMO::sacaorgan(int len, snd_seq_event_t *midievent, snd_seq_tick_time_t gtick, int glen)
@@ -301,7 +324,77 @@ RMGMO::sacaorgan(int len, snd_seq_event_t *midievent, snd_seq_tick_time_t gtick,
       snd_seq_free_event(midievent);
 
 };
-  
+
+void
+RMGMO::PonPlay(int tipo, snd_seq_tick_time_t gtick, int gnota, int gcanal, int gvelocity, int glength)
+{
+snd_seq_event_t ev;
+snd_seq_ev_clear(&ev);
+snd_seq_event_t ev1;
+snd_seq_ev_clear(&ev1);
+
+if (!CM[gcanal].OnOff) return;
+cocas[gcanal]=1;
+int len=3;
+lastvelo[gcanal]=(int)((double)gvelocity*((double)CM[gcanal].vol/127.0)*((double)(AccVol)/85.3));
+
+if ((wdrummixer) && (gcanal == 9)) 
+{
+NotaVel[gnota]=lastvelo[gcanal];
+if(VelPorce[gnota] != 0) 
+{
+gvelocity += (gvelocity * VelPorce[gnota] / 100);
+if (gvelocity<0)gvelocity = 0;
+if (gvelocity>127)gvelocity=127;
+}
+}
+
+gtick = gtick+(patrones*longi)+rema;
+
+switch(tipo)
+       {
+      case 1:
+          snd_seq_ev_set_note(&ev, gcanal, gnota, gvelocity, glength);
+          snd_seq_ev_set_noteoff(&ev1, gcanal, gnota, gvelocity);
+          len=3;
+          break;
+      case 2:
+          snd_seq_ev_set_note(&ev, gcanal, gnota, gvelocity, glength);
+          snd_seq_ev_set_noteon(&ev1, gcanal, gnota, gvelocity);
+          len=3;
+       
+          if((jack)&&(gvelocity>0))
+            ponPendientes(gnota,gcanal,gtick+glength);
+          break;
+      case 3:
+          snd_seq_ev_set_controller(&ev,gcanal,gnota,gvelocity);
+          snd_seq_ev_set_controller(&ev1,gcanal,gnota,gvelocity);
+          len=3;
+          break;
+      case 4:
+          snd_seq_ev_set_pgmchange(&ev,gcanal,gnota);
+          snd_seq_ev_set_pgmchange(&ev1,gcanal,gnota);
+          len=2;
+          break;
+      case 5: 
+          snd_seq_ev_set_pitchbend(&ev,gcanal,gnota);
+          snd_seq_ev_set_pitchbend(&ev1,gcanal,gnota);
+          len=3;
+
+        }
+
+     if ((tipo>0) && (tipo<6))
+          {
+          if (jack) sacaorgan(len,&ev1,gtick,glength);
+
+          snd_seq_ev_schedule_tick(&ev, queue_id,  0, gtick);
+          snd_seq_ev_set_source(&ev, pmidi_out);
+          snd_seq_ev_set_subs (&ev);
+          snd_seq_event_output_direct(midi_in_out, &ev);         
+          }
+
+};
+
 
 
 

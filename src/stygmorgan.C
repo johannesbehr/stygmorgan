@@ -400,26 +400,23 @@ NCE[20].note = -4;  NCE[21].note = -3; NCE[22].note = -2; NCE[23].note = -1;
 
 
   //ALSA init
-
-
   snd_seq_open (&midi_in_out, "hw", SND_SEQ_OPEN_OUTPUT|SND_SEQ_OPEN_INPUT,0);
   snd_seq_set_client_name(midi_in_out, "stygmorgan");  
   snd_config_update_free_global();
 
   char portname[50];
-  sprintf (portname, "stygmorgan IN");
+  sprintf (portname, "stygmorgan OUT");
+  pmidi_out =	snd_seq_create_simple_port (midi_in_out, portname,
+				    SND_SEQ_PORT_CAP_READ |
+				    SND_SEQ_PORT_CAP_SUBS_READ,
+				    SND_SEQ_PORT_TYPE_APPLICATION);
 
+  sprintf (portname, "stygmorgan IN");
   pmidi_in = snd_seq_create_simple_port (midi_in_out, portname,
 					 SND_SEQ_PORT_CAP_WRITE |
 					 SND_SEQ_PORT_CAP_SUBS_WRITE,
 					 SND_SEQ_PORT_TYPE_APPLICATION);
 
-  sprintf (portname, "stygmorgan OUT");
-
-  pmidi_out =	snd_seq_create_simple_port (midi_in_out, portname,
-				    SND_SEQ_PORT_CAP_READ |
-				    SND_SEQ_PORT_CAP_SUBS_READ,
-				    SND_SEQ_PORT_TYPE_APPLICATION);
 
 Fl_Preferences stygmorgan (Fl_Preferences::USER, WEBSITE , PACKAGE);
 

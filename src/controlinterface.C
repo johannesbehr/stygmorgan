@@ -5,6 +5,9 @@
 #include <iostream>
 #include <sstream>
 #include <nlohmann/json.hpp>
+#include <poll.h>
+#include <sys/types.h>
+#include <sys/stat.h> 
 
 using json = nlohmann::json;
 
@@ -54,10 +57,11 @@ ControlInterface::~ControlInterface() {
 // INIT
 //
 
-bool ControlInterface::init_pipe(Mode mode,
-                                const std::string& in,
-                                const std::string& out)
+bool ControlInterface::init_pipe(Mode mode)
 {
+   
+   this->mode = mode;
+
     if (mode == STDIO) {
         read_fd  = STDIN_FILENO;
         write_fd = STDOUT_FILENO;
@@ -65,13 +69,19 @@ bool ControlInterface::init_pipe(Mode mode,
     }
 
     if (mode == FIFO) {
-        read_fd = open(in.c_str(), O_RDONLY);
-        write_fd = open(out.c_str(), O_WRONLY);
-
-        if (read_fd < 0 || write_fd < 0) {
-            perror("fifo open");
-            return false;
+        // Check if Pipes exist, if not create them
+        if (access("/tmp/stygmorgan_in", F_OK) == -1) {
+            if (mkfifo("/tmp/stygmorgan_in", 0666) != 0) {
+                perror("mkfifo in");
+                return false; 
+            }
         }
+        if (access("/tmp/stygmorgan_out", F_OK) == -1) {
+            if (mkfifo("/tmp/stygmorgan_out", 0666) != 0) {           
+                perror("mkfifo out");
+                return false; 
+            }
+        }           
         return true;
     }
 
@@ -94,7 +104,7 @@ void ControlInterface::start() {
 //
 
 void ControlInterface::reader_loop() {
-    char buffer[1024];
+    /*char buffer[1024];
     std::string line;
 
     while (running) {
@@ -111,17 +121,86 @@ void ControlInterface::reader_loop() {
 
             process_input(cmd);
         }
+    }*/
+
+    
+    char buffer[1024];
+    std::string line;
+
+    if(mode == FIFO) {
+        // Open the FIFO for reading
+
+        std::cout << "ControlInterface: Opening FIFO for reading." << std::endl;
+
+        read_fd = open("/tmp/stygmorgan_in", O_RDONLY);
+        if (read_fd < 0) {
+            perror("fifo open");
+            return;
+        }
     }
+
+    struct pollfd pfd;
+    pfd.fd = read_fd;
+    pfd.events = POLLIN;
+
+    std::cout << "ControlInterface: Reader thread started" << std::endl;
+
+    while (running) {
+
+        int ret = poll(&pfd, 1, 100); // 100ms timeout
+
+        if (ret <= 0) continue;
+
+        if (pfd.revents & POLLIN) {
+            ssize_t n = read(read_fd, buffer, sizeof(buffer)-1);
+            if (n <= 0) continue;
+
+            buffer[n] = '\0';
+            line += buffer;
+            std::cout << "ControlInterface: Read data: " << buffer << std::endl; 
+           
+            size_t pos;
+            while ((pos = line.find('\n')) != std::string::npos) {
+                std::string cmd = line.substr(0, pos);
+                line.erase(0, pos + 1);
+                std::cout << "ControlInterface: Processing input: " << cmd << std::endl;    
+                process_input(cmd);
+            }
+        }
+    }
+
+    std::cout << "ControlInterface: Reader thread exiting" << std::endl;
+
 }
 
 void ControlInterface::writer_loop() {
+
+    if(mode == FIFO) {
+        // Open the FIFO for writing
+        std::cout << "ControlInterface: Opening FIFO for writing." << std::endl;
+        write_fd = open("/tmp/stygmorgan_out", O_WRONLY);
+        if (write_fd < 0) {
+            perror("fifo open");
+            return;
+        }
+
+        // Send initial message to indicate we're ready   
+        std::string msg = "\n";
+        write(write_fd, msg.c_str(), msg.size());
+    }
+   
+    std::cout << "ControlInterface: Writer thread started" << std::endl;
+
     while (running) {
         Message msg = queue.pop();
         if (!running) break;
 
+        std::cout << "Sendeing Message: " << msg.payload << std::endl;
         std::string out = msg.payload + "\n";
         write(write_fd, out.c_str(), out.size());
     }
+
+    std::cout << "ControlInterface: Writer thread exiting" << std::endl;    
 }
 
 //
@@ -201,10 +280,14 @@ void ControlInterface::process_input(const std::string& line)
         j_out["styles"] = styles;
 
         send_json(j_out.dump());
+    }else if (cmd == "ctoggle") {
+        int channel = j.value("channel", -1);
+        rmgmo->ctoggle(channel);
+        send_ok();
     }
     else if (cmd == "select_style") {
         int id = j["id"];
-        rmgmo->select_style(id);
+        rmgmo->select_style(id+1);
         send_ok();
     }
     else {

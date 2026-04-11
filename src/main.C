@@ -184,7 +184,9 @@
     new stygmorgan(argc,argv,&rmgmo);
   
     ControlInterface ctrl(&rmgmo);
-    ctrl.init_pipe(ControlInterface::STDIO);   // or FIFO
+    //ctrl.init_pipe(ControlInterface::STDIO);   
+    ctrl.init_pipe(ControlInterface::FIFO);   
+    
     ctrl.start();
   
     while (Pexitprogram == 0)

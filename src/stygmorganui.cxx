@@ -5,6 +5,7 @@
 //Copyright(c) 2006 Josep Andreu (holborn)
 //License GNU/GPL version 2
 #include <stygmicon128.xpm>
+#include <iostream>
 
 MiSlider::MiSlider(int x,int y, int w, int h, const char *label):Fl_Slider(x,y,w,h,label) {
 }
@@ -539,13 +540,19 @@ void stygmorgan::cb_Vol9(MiSlider* o, void* v) {
 }
 
 void stygmorgan::cb_On9_i(Fl_Button* o, void*) {
+
+  rmgmo->ctoggle(9);
+
+  /*
   int nc=9;
 rmgmo->CM[nc].OnOff=o->value();
 if (!rmgmo->CM[nc].OnOff) DP9->color((Fl_Color)0);
 else
 DP9->color((Fl_Color)230);
 DP9->redraw();
+*/
 }
+
 void stygmorgan::cb_On9(Fl_Button* o, void* v) {
   ((stygmorgan*)(o->parent()->parent()->user_data()))->cb_On9_i(o,v);
 }
@@ -620,12 +627,7 @@ void stygmorgan::cb_Vol10(MiSlider* o, void* v) {
 }
 
 void stygmorgan::cb_On10_i(Fl_Button* o, void*) {
-  int nc=10;
-rmgmo->CM[nc].OnOff=o->value();
-if (!rmgmo->CM[nc].OnOff) DP10->color((Fl_Color)0);
-else
-DP10->color((Fl_Color)230);
-DP10->redraw();
+  rmgmo->ctoggle(10);
 }
 void stygmorgan::cb_On10(Fl_Button* o, void* v) {
   ((stygmorgan*)(o->parent()->parent()->user_data()))->cb_On10_i(o,v);
@@ -701,12 +703,7 @@ void stygmorgan::cb_Vol11(MiSlider* o, void* v) {
 }
 
 void stygmorgan::cb_On11_i(Fl_Button* o, void*) {
-  int nc=11;
-rmgmo->CM[nc].OnOff=o->value();
-if (!rmgmo->CM[nc].OnOff) DP11->color((Fl_Color)0);
-else
-DP11->color((Fl_Color)230);
-DP11->redraw();
+  rmgmo->ctoggle(11);
 }
 void stygmorgan::cb_On11(Fl_Button* o, void* v) {
   ((stygmorgan*)(o->parent()->parent()->user_data()))->cb_On11_i(o,v);
@@ -782,13 +779,9 @@ void stygmorgan::cb_Vol12(MiSlider* o, void* v) {
 }
 
 void stygmorgan::cb_On12_i(Fl_Button* o, void*) {
-  int nc=12;
-rmgmo->CM[nc].OnOff=o->value();
-if (!rmgmo->CM[nc].OnOff) DP12->color((Fl_Color)0);
-else
-DP12->color((Fl_Color)230);
-DP12->redraw();
+  rmgmo->ctoggle(12);
 }
+
 void stygmorgan::cb_On12(Fl_Button* o, void* v) {
   ((stygmorgan*)(o->parent()->parent()->user_data()))->cb_On12_i(o,v);
 }
@@ -863,13 +856,9 @@ void stygmorgan::cb_Vol13(MiSlider* o, void* v) {
 }
 
 void stygmorgan::cb_On13_i(Fl_Button* o, void*) {
-  int nc=13;
-rmgmo->CM[nc].OnOff=o->value();
-if (!rmgmo->CM[nc].OnOff) DP13->color((Fl_Color)0);
-else
-DP13->color((Fl_Color)230);
-DP13->redraw();
+    rmgmo->ctoggle(13);
 }
+
 void stygmorgan::cb_On13(Fl_Button* o, void* v) {
   ((stygmorgan*)(o->parent()->parent()->user_data()))->cb_On13_i(o,v);
 }
@@ -944,13 +933,9 @@ void stygmorgan::cb_Vol14(MiSlider* o, void* v) {
 }
 
 void stygmorgan::cb_On14_i(Fl_Button* o, void*) {
-  int nc=14;
-rmgmo->CM[nc].OnOff=o->value();
-if (!rmgmo->CM[nc].OnOff) DP14->color((Fl_Color)0);
-else
-DP14->color((Fl_Color)230);
-DP14->redraw();
+  rmgmo->ctoggle(14);
 }
+
 void stygmorgan::cb_On14(Fl_Button* o, void* v) {
   ((stygmorgan*)(o->parent()->parent()->user_data()))->cb_On14_i(o,v);
 }
@@ -1025,13 +1010,9 @@ void stygmorgan::cb_Vol15(MiSlider* o, void* v) {
 }
 
 void stygmorgan::cb_On15_i(Fl_Button* o, void*) {
-  int nc=15;
-rmgmo->CM[nc].OnOff=o->value();
-if (!rmgmo->CM[nc].OnOff) DP15->color((Fl_Color)0);
-else
-DP15->color((Fl_Color)230);
-DP15->redraw();
+    rmgmo->ctoggle(15);
 }
+
 void stygmorgan::cb_On15(Fl_Button* o, void* v) {
   ((stygmorgan*)(o->parent()->parent()->user_data()))->cb_On15_i(o,v);
 }
@@ -4448,6 +4429,54 @@ void stygmorgan::onTransportStateEvent(const TransportStateEvent& e) {
     }
 }
 
+void stygmorgan::onChannelStateEvent(const ChannelStateEvent& e) {
+    std::cout << "Channel " << e.channel << " is now " << (e.enabled ? "enabled" : "disabled") << ".\n";
+    switch(e.channel) {
+        case 9: // Drums
+            On9->value(e.enabled);
+            DP9->color((Fl_Color)(e.enabled?230:0));
+            DP9->redraw();
+            break;
+        case 10:
+            On10->value(e.enabled);
+            DP10->color((Fl_Color)(e.enabled?230:0));
+            DP10->redraw();
+            break;
+        case 11:
+            On11->value(e.enabled);
+            DP11->color((Fl_Color)(e.enabled?230:0));
+            DP11->redraw();
+            break;
+        case 12:
+            On12->value(e.enabled);
+            DP12->color((Fl_Color)(e.enabled?230:0));
+            DP12->redraw();
+            break;
+        case 13:
+            On13->value(e.enabled);
+            DP13->color((Fl_Color)(e.enabled?230:0));
+            DP13->redraw();
+            break;
+        case 14:
+            On14->value(e.enabled);
+            DP14->color((Fl_Color)(e.enabled?230:0));
+            DP14->redraw();
+            break;
+        case 15:
+            On15->value(e.enabled);
+            DP15->color((Fl_Color)(e.enabled?230:0));
+            DP15->redraw();
+            break;
+      
+        default:
+             //std::cout << "Channel " << e.channel << " state changed.\n";
+             // Allgemeine Kanal-UI aktualisieren
+        break;
+    }
+    if (e.enabled) {
+    } else {
+    }
+} 
 
 stygmorgan::stygmorgan(int argc, char **argv,RMGMO *rmgmo_) {
   int x,y,w,h;
@@ -4465,6 +4494,9 @@ stygmorgan::stygmorgan(int argc, char **argv,RMGMO *rmgmo_) {
 
     rmgmo->events().sink<TransportStateEvent>()
     .connect<&stygmorgan::onTransportStateEvent>(this);
+
+    rmgmo->events().sink<ChannelStateEvent>()
+    .connect<&stygmorgan::onChannelStateEvent>(this); 
 
 /*
   Mix0->hide();

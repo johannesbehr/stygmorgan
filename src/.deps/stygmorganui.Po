@@ -398,7 +398,8 @@ stygmorganui.o: stygmorganui.cxx /usr/include/stdc-predef.h \
  entt/stl/functional.hpp entt/stl/iterator.hpp entt/stl/memory.hpp \
  config.h /usr/include/FL/Fl_Counter.H /usr/include/FL/Fl_Menu_Bar.H \
  /usr/include/FL/Fl_Browser.H /usr/include/FL/Fl_Output.H \
- /usr/include/FL/Fl_Input.H stygmicon128.xpm
+ /usr/include/FL/Fl_Input.H stygmicon128.xpm /usr/include/c++/12/iostream \
+ /usr/include/c++/12/istream /usr/include/c++/12/bits/istream.tcc
 /usr/include/stdc-predef.h:
 /usr/include/libintl.h:
 /usr/include/features.h:
@@ -1001,3 +1002,6 @@ config.h:
 /usr/include/FL/Fl_Output.H:
 /usr/include/FL/Fl_Input.H:
 stygmicon128.xpm:
+/usr/include/c++/12/iostream:
+/usr/include/c++/12/istream:
+/usr/include/c++/12/bits/istream.tcc:

@@ -358,7 +358,8 @@ stygmorgan.midiout.o: stygmorgan.midiout.C /usr/include/stdc-predef.h \
  entt/signal/../stl/functional.hpp entt/signal/fwd.hpp \
  entt/signal/sigh.hpp entt/signal/emitter.hpp entt/signal/sigh.hpp \
  entt/stl/functional.hpp entt/stl/iterator.hpp entt/stl/memory.hpp \
- config.h jack.h stygmorgan.h
+ config.h jack.h stygmorgan.h /usr/include/c++/12/iostream \
+ /usr/include/c++/12/istream /usr/include/c++/12/bits/istream.tcc
 /usr/include/stdc-predef.h:
 stygmorgan.h:
 /usr/include/alsa/asoundlib.h:
@@ -892,3 +893,6 @@ entt/stl/memory.hpp:
 config.h:
 jack.h:
 stygmorgan.h:
+/usr/include/c++/12/iostream:
+/usr/include/c++/12/istream:
+/usr/include/c++/12/bits/istream.tcc:

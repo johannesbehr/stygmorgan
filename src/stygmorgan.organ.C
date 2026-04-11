@@ -107,91 +107,15 @@ if (jack){
 };
 
 void
-RMGMO::PonPlay(int tipo, snd_seq_tick_time_t gtick, int gnota, int gcanal, int gvelocity, int glength)
-{
-snd_seq_event_t ev;
-snd_seq_ev_clear(&ev);
-snd_seq_event_t ev1;
-snd_seq_ev_clear(&ev1);
-
-if (!CM[gcanal].OnOff) return;
-cocas[gcanal]=1;
-int len=3;
-lastvelo[gcanal]=(int)((double)gvelocity*((double)CM[gcanal].vol/127.0)*((double)(AccVol)/85.3));
-
-if ((wdrummixer) && (gcanal == 9)) 
-{
-NotaVel[gnota]=lastvelo[gcanal];
-if(VelPorce[gnota] != 0) 
-{
-gvelocity += (gvelocity * VelPorce[gnota] / 100);
-if (gvelocity<0)gvelocity = 0;
-if (gvelocity>127)gvelocity=127;
-}
-}
-
-
-
-gtick = gtick+(patrones*longi)+rema;
-
-switch(tipo)
-       {
-      case 1:
-          snd_seq_ev_set_note(&ev, gcanal, gnota, gvelocity, glength);
-          snd_seq_ev_set_noteoff(&ev1, gcanal, gnota, gvelocity);
-          len=3;
-          break;
-      case 2:
-          snd_seq_ev_set_note(&ev, gcanal, gnota, gvelocity, glength);
-          snd_seq_ev_set_noteon(&ev1, gcanal, gnota, gvelocity);
-          len=3;
-       
-          if((jack)&&(gvelocity>0))
-            ponPendientes(gnota,gcanal,gtick+glength);
-          break;
-      case 3:
-          snd_seq_ev_set_controller(&ev,gcanal,gnota,gvelocity);
-          snd_seq_ev_set_controller(&ev1,gcanal,gnota,gvelocity);
-          len=3;
-          break;
-      case 4:
-          snd_seq_ev_set_pgmchange(&ev,gcanal,gnota);
-          snd_seq_ev_set_pgmchange(&ev1,gcanal,gnota);
-          len=2;
-          break;
-      case 5: 
-          snd_seq_ev_set_pitchbend(&ev,gcanal,gnota);
-          snd_seq_ev_set_pitchbend(&ev1,gcanal,gnota);
-          len=3;
-
-        }
-
-     if ((tipo>0) && (tipo<6))
-          {
-          if (jack) sacaorgan(len,&ev1,gtick,glength);
-
-          snd_seq_ev_schedule_tick(&ev, queue_id,  0, gtick);
-          snd_seq_ev_set_source(&ev, pmidi_out);
-          snd_seq_ev_set_subs (&ev);
-          snd_seq_event_output_direct(midi_in_out, &ev);         
-          }
-
-};
-
-void
 RMGMO::ostart()
 {
       bplay = 1;
       Pendientes=0;
       memset(PO,0 ,sizeof PO);
       nStyle.har=0;
-      init_queue();
-      enviosincro(1);
-      snd_seq_start_queue(midi_in_out,queue_id, NULL);
-      rela=1.0;
-      set_tempo();
-      if(jack)pontempoenjack();
-      snd_seq_drain_output(midi_in_out); 
+
+      startMidiQueue();
+
       cs = 0;
       vcompas=0;
       scompas=0;
@@ -209,23 +133,17 @@ RMGMO::ostart()
 
 };
 
-void
-RMGMO::ostop()
+void RMGMO::ostop()
 {
     bplay = 0;
-
-    if(jack)
-    {
-    PonNotesOffOrgan(1,0);
-    Pendientes=0;
-    memset(PO,0 ,sizeof PO);
+    if(jack){
+      PonNotesOffOrgan(1,0);
+      Pendientes=0;
+      memset(PO,0 ,sizeof PO);
     }
     rela=1.0;
-    panico(0,0,15);
-    clear_queue();
-    enviosincro(0);
-    snd_seq_stop_queue(midi_in_out, queue_id, NULL);
-    snd_seq_free_queue(midi_in_out, queue_id);
+
+    stopMidiQueue();
 
     // Fire TransportStateEvent
     _dispatcher.trigger(TransportStateEvent{TransportState::Stopped, false});
@@ -288,6 +206,17 @@ void RMGMO::select_style(int id)
     vuelve = 0;
 
     set_variation(lavuelta, true);
+}
+
+
+void RMGMO::ctoggle(int channel, int enable ){
+
+    if(enable == -1){
+        CM[channel].OnOff = !CM[channel].OnOff;
+    } else {
+        CM[channel].OnOff = enable;
+    }
+    _dispatcher.trigger(ChannelStateEvent{channel, CM[channel].OnOff});
 }
 
 
@@ -604,7 +533,6 @@ RMGMO::PonNotesOffOrgan(int force, snd_seq_tick_time_t gtick)
 {
 int i;
 int actu=0;
-snd_seq_event_t ev;
 
 if (Pendientes==0) return;
 
@@ -615,10 +543,7 @@ if (Pendientes==0) return;
               if ((wdrummixer) && (PO[i].canal == 9)) NotaVel[PO[i].nota]=0;
               actu=1;
               PO[i].estado = 0;
-              snd_seq_ev_clear(&ev);
-              snd_seq_ev_set_noteon(&ev, PO[i].canal, PO[i].nota, 0);
-              sacaorgan(3,&ev,0,0);
-      
+              envionota(PO[i].canal, PO[i].nota, 0);
             }
          }
          if (actu) ActuPen();

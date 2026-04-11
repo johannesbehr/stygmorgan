@@ -444,7 +444,18 @@ controlinterface.o: controlinterface.C /usr/include/stdc-predef.h \
  /usr/include/nlohmann/detail/conversions/to_chars.hpp \
  /usr/include/nlohmann/ordered_map.hpp /usr/include/c++/12/any \
  /usr/include/nlohmann/detail/macro_unscope.hpp \
- /usr/include/nlohmann/thirdparty/hedley/hedley_undef.hpp
+ /usr/include/nlohmann/thirdparty/hedley/hedley_undef.hpp \
+ /usr/include/aarch64-linux-gnu/sys/stat.h \
+ /usr/include/aarch64-linux-gnu/bits/statx.h /usr/include/linux/stat.h \
+ /usr/include/linux/types.h /usr/lib/linux/uapi/arm64/asm/types.h \
+ /usr/include/asm-generic/types.h /usr/include/asm-generic/int-ll64.h \
+ /usr/lib/linux/uapi/arm64/asm/bitsperlong.h \
+ /usr/include/asm-generic/bitsperlong.h /usr/include/linux/posix_types.h \
+ /usr/include/linux/stddef.h /usr/lib/linux/uapi/arm64/asm/posix_types.h \
+ /usr/include/asm-generic/posix_types.h \
+ /usr/include/aarch64-linux-gnu/bits/statx-generic.h \
+ /usr/include/aarch64-linux-gnu/bits/types/struct_statx_timestamp.h \
+ /usr/include/aarch64-linux-gnu/bits/types/struct_statx.h
 /usr/include/stdc-predef.h:
 controlinterface.h:
 stygmorgan.h:
@@ -1087,3 +1098,19 @@ config.h:
 /usr/include/c++/12/any:
 /usr/include/nlohmann/detail/macro_unscope.hpp:
 /usr/include/nlohmann/thirdparty/hedley/hedley_undef.hpp:
+/usr/include/aarch64-linux-gnu/sys/stat.h:
+/usr/include/aarch64-linux-gnu/bits/statx.h:
+/usr/include/linux/stat.h:
+/usr/include/linux/types.h:
+/usr/lib/linux/uapi/arm64/asm/types.h:
+/usr/include/asm-generic/types.h:
+/usr/include/asm-generic/int-ll64.h:
+/usr/lib/linux/uapi/arm64/asm/bitsperlong.h:
+/usr/include/asm-generic/bitsperlong.h:
+/usr/include/linux/posix_types.h:
+/usr/include/linux/stddef.h:
+/usr/lib/linux/uapi/arm64/asm/posix_types.h:
+/usr/include/asm-generic/posix_types.h:
+/usr/include/aarch64-linux-gnu/bits/statx-generic.h:
+/usr/include/aarch64-linux-gnu/bits/types/struct_statx_timestamp.h:
+/usr/include/aarch64-linux-gnu/bits/types/struct_statx.h:
